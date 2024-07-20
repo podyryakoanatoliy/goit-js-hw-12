@@ -1,3 +1,4 @@
+
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
@@ -52,11 +53,22 @@ export function onCreateMarkup(photo) {
 }
 
 export function onCreateGalleryPhoto(data) {
-  allGallery.innerHTML = '';
   allGallery.insertAdjacentHTML('beforeend', onCreateMarkup(data.hits));
   userDataLog.refresh();
+  scrollPage();
 }
 
 export function clearGallery() {
   allGallery.innerHTML = '';
+}
+
+const scrollPage = async () => {
+  const galleryItem = document.querySelector('.gallery-item');
+  if (galleryItem) {
+    const { height } = galleryItem.getBoundingClientRect();
+    window.scrollBy({
+      top: height * 2,
+      behavior: 'smooth',
+    });
+  }
 }

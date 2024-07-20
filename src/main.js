@@ -1,4 +1,3 @@
-
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
@@ -8,45 +7,85 @@ import { onCreateGalleryPhoto, clearGallery } from './js/render-functions';
 const cssLoadAnimation = document.querySelector('.loader');
 const inputQuery = document.querySelector('.my-input');
 const btnSbm = document.querySelector('.form-btn');
+const loadMoreBtn = document.querySelector('.load-more-btn');
 
-btnSbm.addEventListener('click', handleClick);
+let pages = 1;
+let queryData = '';
 
-function handleClick(evt) {
-  cssLoadAnimation.style.display = 'inline-block';
+loadMoreBtn.addEventListener('click', async () => {
+  pages += 1;
+  await loadMorePhotos();
+});
+
+btnSbm.addEventListener('click', async (evt) => {
   evt.preventDefault();
+  cssLoadAnimation.style.display = 'inline-block';
 
-    let queryData = inputQuery.value.trim().replace(/\s+/g, '+').toLowerCase();
+  queryData = inputQuery.value.trim().replace(/\s+/g, '+').toLowerCase();
 
   if (queryData === "") {
     cssLoadAnimation.style.display = 'none';
+    // loadMoreBtn.style.display = 'inline-block,';
     clearGallery();
-     iziToast.error({
-    title: 'Error',
-    backgroundColor: '#ef4040',
-    message:
-      'Please enter a valid search query.',
-    messageColor: '#fff',
-    messageSize: '16px',
-    position: 'topRight',
-});
+    iziToast.error({
+      title: 'Error',
+      backgroundColor: '#ef4040',
+      message: 'Please enter a valid search query.',
+      messageColor: '#fff',
+      messageSize: '16px',
+      position: 'topRight',
+    });
     return;
   }
 
-  console.log(queryData);
+  pages = 1;  // Reset pages for a new search
+  await searchPhotos();
+});
 
-  onSearchPhotoFromText(queryData)
-    .then(data => {
-      cssLoadAnimation.style.display = 'none';
-      // data.totalHits === 0 ? OnShowError(data); : onCreateGalleryPhoto(data);  // Використовуємо onCreateGalleryPhoto
-      if (data.totalHits === 0) {
-        OnShowError();
-        clearGallery();
-        
-      }else{onCreateGalleryPhoto(data)}
-      
-    })
-    .catch(OnShowError)
-    .finally(() => {
-      inputQuery.value = '';
+async function searchPhotos() {
+  try {
+    const data = await onSearchPhotoFromText(queryData, pages);
+    cssLoadAnimation.style.display = 'none';
+    clearGallery();
+
+    if (data.totalHits === 0) {
+      OnShowError();
+      loadMoreBtn.style.display = 'none';
+    } else {
+      onCreateGalleryPhoto(data);
+      handleLoadMoreButtonVisibility(data);
+    }
+  } catch (error) {
+    OnShowError();
+  } finally {
+    inputQuery.value = '';
+  }
+}
+
+async function loadMorePhotos() {
+  try {
+    const data = await onSearchPhotoFromText(queryData, pages);
+    onCreateGalleryPhoto(data);
+    handleLoadMoreButtonVisibility(data);
+  } catch (error) {
+    OnShowError();
+  }
+}
+
+function handleLoadMoreButtonVisibility(data) {
+  const totalPages = Math.ceil(data.totalHits / 15);
+
+  if (pages >= totalPages) {
+    loadMoreBtn.style.display = 'none';
+    iziToast.info({
+      title: 'Info',
+      backgroundColor: '#f39c12',
+      message: "We're sorry, but you've reached the end of search results.",
+      messageColor: '#fff',
+      messageSize: '16px',
+      position: 'topRight',
     });
+  } else {
+    loadMoreBtn.style.display = 'inline-block';
+  }
 }
